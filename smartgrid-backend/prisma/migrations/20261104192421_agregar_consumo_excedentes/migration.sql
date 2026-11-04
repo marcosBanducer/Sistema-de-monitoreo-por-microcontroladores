@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "mediciones" ADD COLUMN     "origenConsumo" TEXT,
+ALTER COLUMN "consumo" DROP NOT NULL,
+ALTER COLUMN "consumo" DROP DEFAULT,
+ALTER COLUMN "deficit" DROP NOT NULL,
+ALTER COLUMN "deficit" DROP DEFAULT,
+ALTER COLUMN "excedente" DROP NOT NULL,
+ALTER COLUMN "excedente" DROP DEFAULT;

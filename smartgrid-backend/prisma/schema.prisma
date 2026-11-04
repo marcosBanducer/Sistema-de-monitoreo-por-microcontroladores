@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Medicion {
+  id        Int      @id @default(autoincrement())
+  nodo      String
+  tension   Float
+  corriente Float
+  potencia  Float
+  fechaHora DateTime @default(now())
+
+  consumo   Float?
+  excedente Float?
+  deficit   Float?
+
+  origenConsumo String?
+
+  @@map("mediciones")
+}
+
+
+// INSTALACIONES FOTOVOLTAICAS
+model Instalacion {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  ubicacion   String
+  descripcion String?
+  fechaAlta   DateTime @default(now())
+
+  // PROPIETARIO
+  propietarioId Int?
+  propietario   Usuario? @relation("PropietarioInstalacion", fields: [propietarioId], references: [id])
+
+  // NODOS Y ACCESOS
+  nodos   Nodo[]
+  accesos AccesoInstalacion[]
+}
+
+// USUARIOS DEL SISTEMA
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  instalacionesPropias Instalacion[]       @relation("PropietarioInstalacion")
+  accesos              AccesoInstalacion[]
+}
+
+// NODOS ESP32
+model Nodo {
+  id            Int    @id @default(autoincrement())
+  identificador String @unique
+  nombre        String
+
+  instalacionId Int
+  instalacion   Instalacion @relation(fields: [instalacionId], references: [id])
+}
+
+// USUARIOS AUTORIZADOS
+model AccesoInstalacion {
+  id            Int @id @default(autoincrement())
+  usuarioId     Int
+  instalacionId Int
+
+  usuario     Usuario     @relation(fields: [usuarioId], references: [id])
+  instalacion Instalacion @relation(fields: [instalacionId], references: [id])
+
+  @@unique([usuarioId, instalacionId])
+}
