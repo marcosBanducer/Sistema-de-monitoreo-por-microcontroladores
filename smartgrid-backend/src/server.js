@@ -19,14 +19,30 @@ const PORT = process.env.PORT || 3000;
 // MIDDLEWARE
 const origenesPermitidos = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
-app.use(cors({
-  origin: origenesPermitidos,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      const esOrigenPermitido =
+        origenesPermitidos.includes(origin);
+
+      const esPreviewVercel =
+        /^https:\/\/sistema-de-monitoreo-por-microcontroladores-[a-z0-9-]+\.vercel\.app$/.test(origin);
+
+      if (esOrigenPermitido || esPreviewVercel) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Origen no permitido por CORS"));
+    },
+  })
+);
 
 app.use(express.json());
 
