@@ -46,10 +46,12 @@ export default function Dashboard() {
           );
         }
 
-        const url = instalacionId
-          ? `http://localhost:3000/api/instalaciones/${instalacionId}/mediciones`
-          : "http://localhost:3000/api/mediciones";
+        const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000";
 
+const url = instalacionId
+  ? `${API_URL}/api/instalaciones/${instalacionId}/mediciones`
+  : `${API_URL}/api/mediciones`;
         const respuesta = await fetch(url, {
           headers: {
             Authorization: `Bearer ${token}`
