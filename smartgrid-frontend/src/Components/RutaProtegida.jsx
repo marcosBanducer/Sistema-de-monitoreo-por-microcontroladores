@@ -15,7 +15,7 @@ export default function RutaProtegida() {
 
     const controlador = new AbortController();
 
-    fetch("http://localhost:3000/api/usuarios/perfil", {
+fetch(`${import.meta.env.VITE_API_URL}/api/usuarios/perfil`, {
       headers: {
         Authorization: `Bearer ${token}`
       },
