@@ -23,18 +23,18 @@ export default function Login() {
 
     try {
       const respuesta = await fetch(
-        "http://localhost:3000/api/usuarios/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            email: email.trim().toLowerCase(),
-            password
-          })
-        }
-      );
+  `${import.meta.env.VITE_API_URL}/api/usuarios/login`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      email: email.trim().toLowerCase(),
+      password
+    })
+  }
+);
 
       const datos = await respuesta.json();
 
