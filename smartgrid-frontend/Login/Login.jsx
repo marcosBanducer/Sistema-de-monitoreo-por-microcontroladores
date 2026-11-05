@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+
 export default function Login() {
   const navigate = useNavigate();
 
@@ -22,19 +24,16 @@ export default function Login() {
     setCargando(true);
 
     try {
-      const respuesta = await fetch(
-        "http://localhost:3000/api/usuarios/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email.trim().toLowerCase(),
-            password,
-          }),
-        }
-      );
+      const respuesta = await fetch(`${API_URL}/api/usuarios/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
 
       const datos = await respuesta.json();
 
@@ -51,8 +50,8 @@ export default function Login() {
       sessionStorage.setItem("token", datos.token);
 
       navigate("/dashboard", { replace: true });
-
     } catch (err) {
+      console.error("Error de login:", err);
       setError(err.message || "Error al iniciar sesión");
     } finally {
       setCargando(false);
@@ -62,7 +61,6 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-box">
-
         <div className="login-logo">☀️</div>
 
         <h1>SmartGrid</h1>
@@ -79,7 +77,6 @@ export default function Login() {
         )}
 
         <form onSubmit={handleSubmit}>
-
           <div className="form-group">
             <label htmlFor="email">
               Correo electrónico
@@ -119,7 +116,6 @@ export default function Login() {
           >
             {cargando ? "Ingresando..." : "Iniciar sesión"}
           </button>
-
         </form>
 
         <div className="registro-link">
@@ -132,7 +128,6 @@ export default function Login() {
             Crear cuenta
           </button>
         </div>
-
       </div>
     </div>
   );
