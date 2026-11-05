@@ -5,22 +5,35 @@ const express = require("express");
 const cors = require("cors");
 const mqtt = require("mqtt");
 const { PrismaClient } = require("@prisma/client");
+
 const { crearRutasUsuarios } = require("./endpoint");
 const { crearRutasInstalaciones } = require("./instalaciones");
 const { autenticar } = require("./middleware/auth");
 const { simularConsumo } = require("./simularConsumo");
+
 const app = express();
 const prisma = new PrismaClient();
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // MIDDLEWARE
-app.use(cors());
+const origenesPermitidos = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: origenesPermitidos,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
 app.use(express.json());
 
-// RUTAS DE USUARIOS
+// RUTAS DE USUARIOS E INSTALACIONES
 app.use("/api/usuarios", crearRutasUsuarios(prisma));
 app.use("/api/instalaciones", crearRutasInstalaciones(prisma));
+
 // RUTA PRINCIPAL
 app.get("/", (req, res) => {
   res.json({
@@ -28,13 +41,18 @@ app.get("/", (req, res) => {
   });
 });
 
+// CONSULTAR MEDICIONES DEL USUARIO AUTENTICADO
 app.get("/api/mediciones", autenticar, async (req, res) => {
   try {
     const instalaciones = await prisma.instalacion.findMany({
       where: {
         OR: [
           { propietarioId: req.usuarioId },
-          { accesos: { some: { usuarioId: req.usuarioId } } }
+          {
+            accesos: {
+              some: { usuarioId: req.usuarioId }
+            }
+          }
         ]
       },
       include: {
@@ -63,127 +81,93 @@ app.get("/api/mediciones", autenticar, async (req, res) => {
     res.json(mediciones);
   } catch (error) {
     console.error("Error consultando mediciones:", error);
+
     res.status(500).json({
       error: "Error al consultar mediciones"
     });
   }
 });
 
-// CONSULTAR INSTALACIONES
-/*app.get("/api/instalaciones", async (req, res) => {
-  try {
-    const instalaciones = await prisma.instalacion.findMany({
-      orderBy: { fechaAlta: "desc" }
-    });
+// MQTT OPCIONAL
+if (process.env.MQTT_ENABLED === "true") {
+  const mqttUrl = process.env.MQTT_URL || "mqtt://localhost:1883";
 
-    res.json(instalaciones);
-  } catch (error) {
-    console.error("Error consultando instalaciones:", error);
-    res.status(500).json({
-      error: "Error al consultar instalaciones"
-    });
+  const mqttOptions = {};
+
+  if (process.env.MQTT_USERNAME) {
+    mqttOptions.username = process.env.MQTT_USERNAME;
   }
-});*/
 
-/*
-app.post("/api/instalaciones", async (req, res) => {
-  try {
-    const { nombre, ubicacion, descripcion } = req.body;
+  if (process.env.MQTT_PASSWORD) {
+    mqttOptions.password = process.env.MQTT_PASSWORD;
+  }
 
-    if (
-      typeof nombre !== "string" ||
-      typeof ubicacion !== "string" ||
-      !nombre.trim() ||
-      !ubicacion.trim()
-    ) {
-      return res.status(400).json({
-        error: "Nombre y ubicación son obligatorios"
-      });
-    }
+  const mqttClient = mqtt.connect(mqttUrl, mqttOptions);
 
-    const instalacion = await prisma.instalacion.create({
-      data: {
-        nombre: nombre.trim(),
-        ubicacion: ubicacion.trim(),
-        descripcion:
-          typeof descripcion === "string"
-            ? descripcion.trim()
-            : null
+  mqttClient.on("connect", () => {
+    console.log("Conectado al broker MQTT");
+
+    mqttClient.subscribe("smartgrid/nodo1/medicion", (error) => {
+      if (error) {
+        console.error("Error de suscripción MQTT:", error);
+      } else {
+        console.log("Suscripto a smartgrid/nodo1/medicion");
       }
     });
+  });
 
-    res.status(201).json(instalacion);
-  } catch (error) {
-    console.error("Error creando instalación:", error);
-    res.status(500).json({
-      error: "Error al registrar instalación"
-    });
-  }
-});*/
+  mqttClient.on("error", (error) => {
+    console.error("Error MQTT:", error.message);
+  });
 
-// CONEXIÓN MQTT
-const mqttClient = mqtt.connect("mqtt://localhost:1883");
+  mqttClient.on("message", async (topic, message) => {
+    try {
+      const datos = JSON.parse(message.toString());
 
-mqttClient.on("connect", () => {
-  console.log("Conectado a Mosquitto");
+      if (datos.tension == null || datos.corriente == null) {
+        return;
+      }
 
-  mqttClient.subscribe("smartgrid/nodo1/medicion", (error) => {
-    if (error) {
-      console.error("Error de suscripción MQTT:", error);
-    } else {
-      console.log("Suscripto a smartgrid/nodo1/medicion");
+      const tension = Number(datos.tension);
+      const corriente = Number(datos.corriente);
+
+      if (
+        !Number.isFinite(tension) ||
+        !Number.isFinite(corriente)
+      ) {
+        return;
+      }
+
+      const potencia = Number(
+        (tension * corriente).toFixed(2)
+      );
+
+      const balance = simularConsumo(potencia);
+
+      const medicion = await prisma.medicion.create({
+        data: {
+          nodo: datos.nodo || "nodo1",
+          tension,
+          corriente,
+          potencia,
+          consumo: balance.consumo,
+          excedente: balance.excedente,
+          deficit: balance.deficit,
+          origenConsumo: balance.origenConsumo
+        }
+      });
+
+      console.log("Medición MQTT guardada:", medicion.id);
+    } catch (error) {
+      console.error("Error procesando MQTT:", error);
     }
   });
-});
-
-mqttClient.on("error", (error) => {
-  console.error("Error MQTT:", error.message);
-});
-
-mqttClient.on("message", async (topic, message) => {
-  try {
-    const datos = JSON.parse(message.toString());
-
-    if (datos.tension == null || datos.corriente == null) {
-      return;
-    }
-
-    const tension = Number(datos.tension);
-    const corriente = Number(datos.corriente);
-
-    if (
-      !Number.isFinite(tension) ||
-      !Number.isFinite(corriente)
-    ) {
-      return;
-    }
-
-    const potencia = Number(
-      (tension * corriente).toFixed(2)
-    );
-const balance = simularConsumo(potencia);
-  const medicion = await prisma.medicion.create({
-  data: {
-    nodo: datos.nodo || "nodo1",
-    tension,
-    corriente,
-    potencia,
-    consumo: balance.consumo,
-    excedente: balance.excedente,
-    deficit: balance.deficit,
-    origenConsumo: balance.origenConsumo
-  }
-});
-
-    console.log("Medición MQTT guardada:", medicion.id);
-  } catch (error) {
-    console.error("Error procesando MQTT:", error);
-  }
-});
+} else {
+  console.log("MQTT deshabilitado en este entorno");
+}
 
 // INICIAR SERVIDOR
-app.listen(PORT, () => {
-  console.log(
-    `API SmartGrid funcionando en http://localhost:${PORT}`
-  );
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`API SmartGrid funcionando en puerto ${PORT}`);
 });
+
