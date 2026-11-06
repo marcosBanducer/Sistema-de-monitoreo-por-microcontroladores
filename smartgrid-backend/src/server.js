@@ -104,6 +104,99 @@ app.get("/api/mediciones", autenticar, async (req, res) => {
   }
 });
 
+const crypto = require("crypto");
+
+// RECIBIR MEDICIONES DESDE EL PUENTE MQTT
+app.post("/api/mediciones/ingesta", async (req, res) => {
+  try {
+    const claveConfigurada = process.env.SMARTGRID_INGEST_KEY;
+    const claveRecibida = req.get("X-Device-Key");
+
+    if (!claveConfigurada) {
+      console.error("SMARTGRID_INGEST_KEY no configurada");
+      return res.status(503).json({
+        error: "Servicio de ingesta no configurado"
+      });
+    }
+
+    const esperada = Buffer.from(claveConfigurada, "utf8");
+    const recibida = Buffer.from(claveRecibida || "", "utf8");
+
+    if (
+      esperada.length !== recibida.length ||
+      !crypto.timingSafeEqual(esperada, recibida)
+    ) {
+      return res.status(401).json({
+        error: "Dispositivo no autorizado"
+      });
+    }
+
+    const { nodo, tension, corriente } = req.body || {};
+
+    if (
+      typeof nodo !== "string" ||
+      !nodo.trim() ||
+      typeof tension !== "number" ||
+      typeof corriente !== "number" ||
+      !Number.isFinite(tension) ||
+      !Number.isFinite(corriente) ||
+      tension < 0 ||
+      corriente < 0
+    ) {
+      return res.status(400).json({
+        error: "Datos de medicion invalidos"
+      });
+    }
+
+    // Verificar que el nodo pertenezca a una instalacion
+    const nodoRegistrado = await prisma.nodo.findUnique({
+      where: { identificador: nodo.trim() }
+    });
+
+    if (!nodoRegistrado) {
+      return res.status(404).json({
+        error: "Nodo no registrado"
+      });
+    }
+
+    // Calcular potencia en el servidor
+    const potencia = Number(
+      (tension * corriente).toFixed(2)
+    );
+
+    const balance = simularConsumo(potencia);
+
+    const medicion = await prisma.medicion.create({
+      data: {
+        nodo: nodoRegistrado.identificador,
+        tension,
+        corriente,
+        potencia,
+        consumo: balance.consumo,
+        excedente: balance.excedente,
+        deficit: balance.deficit,
+        origenConsumo: balance.origenConsumo
+      }
+    });
+
+    console.log("Medicion recibida desde MQTT:", medicion.id);
+
+    return res.status(201).json({
+      mensaje: "Medicion guardada",
+      id: medicion.id,
+      nodo: medicion.nodo,
+      fechaHora: medicion.fechaHora
+    });
+
+  } catch (error) {
+    console.error("Error en ingesta MQTT:", error);
+
+    return res.status(500).json({
+      error: "Error al guardar la medicion"
+    });
+  }
+});
+
 // MQTT OPCIONAL
 if (process.env.MQTT_ENABLED === "true") {
   const mqttUrl = process.env.MQTT_URL || "mqtt://localhost:1883";
