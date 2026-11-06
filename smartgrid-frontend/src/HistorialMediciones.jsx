@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const API = "http://localhost:3000/api/mediciones";
+const API = `${import.meta.env.VITE_API_URL}/api/mediciones`;
 
 const obtenerFecha = (medicion) =>
   medicion.createdAt ?? medicion.fechaHora;
@@ -57,7 +57,7 @@ const cargar = useCallback(async (signal) => {
     }
 
     const respuesta = await fetch(
-      "http://localhost:3000/api/mediciones",
+      API,
       {
         signal,
         headers: {
