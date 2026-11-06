@@ -24,10 +24,10 @@ export default function LandingPage({ alIrALogin }) {
           <h3>Gráficos Avanzados</h3>
           <p style={{ color: "#6b7280", fontSize: "14px" }}>Análisis de tendencias mediante herramientas dinámicas e intuitivas.</p>
         </div>
-        <div className="card">
+        {/*<div className="card">
           <h3>Alertas al Instante</h3>
           <p style={{ color: "#6b7280", fontSize: "14px" }}>Notificaciones inmediatas ante cualquier anomalía crítica detectada.</p>
-        </div>
+        </div>*/}
       </div>
 
       <button 
