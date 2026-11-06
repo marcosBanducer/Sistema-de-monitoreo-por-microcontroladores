@@ -22,7 +22,7 @@ export default function RegistroInstalacion({ onRegistrada }) {
 
     try {
       const respuesta = await fetch(
-        "http://localhost:3000/api/instalaciones",
+       `${import.meta.env.VITE_API_URL}/api/instalaciones`,
         {
           method: "POST",
           headers: {
