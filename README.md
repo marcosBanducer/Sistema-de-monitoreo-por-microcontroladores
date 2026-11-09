@@ -27,8 +27,10 @@ generando a partir de sus instalaciones.
 Los usuarios registrados son los siguientes:
 
 Propietario, acceder desde login con los siguientes datos:
+
 Correo electrónico: hyru384@gmail.com
 Contraseña: Probando123
+
 Una vez ingresado podrá visualizar la información del dashboard, notara que la
 información mostrada es la ultima y el grafico representa las últimas mediciones.
 Dado que se conecta localmente el esp32, se ira cargando la información cuando
@@ -37,16 +39,21 @@ de datos de posgretSQL, dado que Supabase, al no estar activo, pone en stanby la
 Desde este usuario se puede visualizar que posee activo el botón de administrar
 accesos, el cual en este momento se encuentra con permiso, otro usuario, que es
 invitado@smartgrid.com, si se quiere se puede revocar el permiso.
+
 Otros usuarios creados son los siguientes:
+
 Correo electrónico: invitado@smartgrid.com
 Contraseña: pruebaInvitado123
+
 Correo electrónico: invitadodos@smartgrid.com
 Contraseña: 1234Invitado
+
 Se pueden crear usuarios a gusto, también pueden pasar a ser propietarios.
 En el caso que se quiera adaptar un ESP32 para simular se tiene que cargar el
 archivo esp32mqtt.ino en un modulo ESP32 de 30 pines, puede ser también otro modelo,
 el archivo subido posee datos secretos, dado que hay que configurar la red wifi local para
 utilizarlo.
+
 const char* ssid = "nombre de la red wifi, tiene que ser una red de 2,4ghz no utilizar red
 5,8ghz";
 const char* password = "contraseña de wifi";
