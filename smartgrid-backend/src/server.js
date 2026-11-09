@@ -17,14 +17,17 @@ const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3000;
 
 // MIDDLEWARE
+
 const origenesPermitidos = [
   "http://localhost:5173",
+  "https://sistema-de-monitoreo-por-microcontr.vercel.app",
   process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, callback) => {
+      // Permitir solicitudes sin Origin (por ejemplo, Postman)
       if (!origin) {
         return callback(null, true);
       }
@@ -32,6 +35,7 @@ app.use(
       const esOrigenPermitido =
         origenesPermitidos.includes(origin);
 
+      // Mantener compatibilidad con previews del proyecto
       const esPreviewVercel =
         /^https:\/\/sistema-de-monitoreo-por-microcontroladores-[a-z0-9-]+\.vercel\.app$/.test(origin);
 
@@ -39,10 +43,12 @@ app.use(
         return callback(null, true);
       }
 
+      console.warn("Origen bloqueado por CORS:", origin);
       return callback(new Error("Origen no permitido por CORS"));
     },
   })
 );
+
 
 app.use(express.json());
 
