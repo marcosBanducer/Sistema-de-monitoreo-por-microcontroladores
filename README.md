@@ -6,20 +6,17 @@ información energética de instalaciones fotovoltaicas de pequeña escala.
 El sistema integra una aplicación web desarrollada con React y Vite, un backend
 Node.js y Express, una base de datos PostgreSQL mediante Prisma ORM y una
 arquitectura de comunicación IoT basada en ESP32 y MQTT.
+
 Actualmente, el prototipo presenta un avance funcional significativo y utiliza
 datos simulados de generación, consumo y excedentes energéticos en corriente continua.
+
 Acceso a la aplicación web
+
 Plataforma: Vercel
+
 Enlace: https://sistema-de-monitoreo-por-microcontr.vercel.app/
 Permite acceder a la interfaz del sistema y explorar las funcionalidades implementadas.
-Código fuente
-Plataforma: GitHub
 
-Enlace:https://github.com/marcosBanducer/Sistema-de-monitoreo-por-
-microcontroladores
-
-Contiene el código del frontend, backend y los archivos de configuración necesarios para
-comprender la arquitectura del sistema.
 
 Instructivo con usuarios generados
 Se cargaron tres usuarios para el testeo del sistema y se cargó una instalación
