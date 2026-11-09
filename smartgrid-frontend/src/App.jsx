@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import "./App.css";
 
-// Componentes que ya tenés
 import RegistroInstalacion from "./RegistroInstalacion";
 import MisInstalaciones from "./MisInstalaciones";
 import HistorialMediciones from "./HistorialMediciones";
