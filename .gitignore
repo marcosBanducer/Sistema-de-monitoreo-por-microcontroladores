@@ -1,6 +1,9 @@
 # Dependencias
 node_modules/
 
+# Credenciales privadas del ESP32
+**/secrets.h
+
 # Variables de entorno
 .env
 .env.*
